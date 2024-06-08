@@ -13,7 +13,23 @@ const puerto = 3900;
 app.use(cors());
 
 // Convertir el cuerpo de las solicitudes en JSON
-app.use(express.json());
+app.use(express.json());//recibir datos con content-type app/json
+
+app.use(express.urlencoded({ extended: true }));//recibir datos con content-type app/x-www-form-urlencoded
+
+//rutas
+const rutas_articulo= require("./rutas/Articuloruta");
+
+//cargando ruta
+app.use("/api",rutas_articulo);
+
+
+
+
+
+
+
+
 
 // Crear ruta para la raíz
 app.get('/', (req, res) => {
@@ -47,3 +63,4 @@ app.listen(puerto, () => {
     console.log('Servidor iniciado en http://localhost:' + puerto);
 });
 
+// Path: database/conexion.js
