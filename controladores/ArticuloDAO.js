@@ -35,18 +35,7 @@ const crear = async (req, res) => {
 
 
     //validar datos
-    try {
-        let validartitulo = !validator.isEmpty(parametros.titulo) && validator.isLength(parametros.titulo, { min: 5, max: undefined });
-        let validarcontenido = !validator.isEmpty(parametros.contenido);
-
-        if (!validartitulo || !validarcontenido) {
-            throw new Error("No se han validado los datos"); // Cambiado a "Error"
-        }
-    } catch (error) {
-        return res.status(400).json({
-            mensaje: error.message // Cambiado a "error.message" para obtener el mensaje de error
-        });
-    }
+    validarDatos(req, res, parametros);
 
     //crear el objeto a guardar
     const articulo = new Articulo(parametros);
@@ -84,8 +73,8 @@ const listar = async (req, res) => {
         if (limite) {
             // Si se recibe el parámetro 'limite', aplicar el límite
             articulos = await Articulo.find({})
-            .sort({ fecha: 1 })
-            .limit(2);
+                .sort({ fecha: 1 })
+                .limit(2);
         } else {
             // Si no se recibe el parámetro 'limite', obtener todos los artículos ordenados por fecha
             articulos = await Articulo.find({}).sort({ fecha: 1 });
@@ -108,20 +97,113 @@ const listar = async (req, res) => {
         });
     }
 };
-//buscar un solo articulo
-const buscaruno=(req,res)=>{
-//recoger id de articulo por url
 
-//buscar articulo 
+//buscar un articulo
+const buscaruno = async (req, res) => {
+    try {
+        // Recoger id de artículo por URL
+        let id = req.params.id;
 
-//mensage de que no se encontro el articulo
+        // Buscar artículo
+        let articulo = await Articulo.findById(id);
 
-//devolver articulo
-}
+        if (!articulo) {
+            return res.status(404).json({
+                mensaje: "No se encontró el artículo"
+            });
+        }
+
+        return res.status(200).json({
+            mensaje: "Artículo encontrado",
+            articulo
+        });
+    } catch (error) {
+        return res.status(500).json({
+            mensaje: "Error al buscar el artículo",
+            error
+        });
+    }
+};
+
+//eliminar articulo
+const eliminar = async (req, res) => {
+    try {
+        // Recoger id de artículo por URL
+        let id = req.params.id;
+
+        // Eliminar artículo
+        let articulo = await Articulo.findByIdAndDelete(id);
+
+        if (!articulo) {
+            return res.status(404).json({
+                mensaje: "No se encontró el artículo"
+            });
+        }
+
+        return res.status(200).json({
+            mensaje: "Artículo eliminado",
+            articulo
+        });
+    } catch (error) {
+        return res.status(500).json({
+            mensaje: "Error al eliminar el artículo",
+            error
+        });
+    }
+};
+//modificar articulo
+const modificar = async (req, res) => {
+    let id = req.params.id;
+    let parametros = req.body;
+
+    // Validar datos
+    validarDatos(req, res, parametros);
+
+    // Buscar y actualizar el artículo
+    try {
+        let articulo = await Articulo.findByIdAndUpdate(id, parametros, { new: true });
+
+        if (!articulo) {
+            return res.status(404).json({
+                mensaje: "No se encontró el artículo"
+            });
+        }
+
+        return res.status(200).json({
+            mensaje: "Artículo modificado",
+            articulo
+        });
+    } catch (error) {
+        return res.status(500).json({
+            mensaje: "Error al modificar el artículo",
+            error
+        });
+    }
+};
+
+// Función para validar datos del body y json
+const validarDatos = (req, res, parametros) => {
+    try {
+        let validartitulo = !validator.isEmpty(parametros.titulo) && validator.isLength(parametros.titulo, { min: 5 });
+        let validarcontenido = !validator.isEmpty(parametros.contenido);
+
+        if (!validartitulo || !validarcontenido) {
+            return res.status(400).json({
+                mensaje: "No se han validado los datos"
+            });
+        }
+    } catch (error) {
+        return res.status(400).json({
+            mensaje: error.message
+        });
+    }
+};
 module.exports = {
     prueba,
     curso,
     crear,
     listar,
-    buscaruno
+    buscaruno,
+    eliminar,
+    modificar
 }

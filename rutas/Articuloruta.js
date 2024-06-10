@@ -17,4 +17,8 @@ router.get("/listar/:ultimos?",ArticuloDAO.listar)
 
 router.get("/buscar/:id",ArticuloDAO.buscaruno)
 
+router.delete("/eliminar/:id",ArticuloDAO.eliminar)
+
+router.put("/modificar/:id",ArticuloDAO.modificar)
+
 module.exports=router;
