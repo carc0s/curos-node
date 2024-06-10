@@ -76,32 +76,52 @@ const crear = async (req, res) => {
 
 }
 //listar articulos
-const listar = (req, res) => {
-    // Buscar todos los artículos
-    Articulo.find({});
+const listar = async (req, res) => {
+    try {
+        let articulos;
+        const limite = req.params.ultimos || null; // Obtener el parámetro 'limite' o asignar null si no se proporciona
 
-    listar.sort({ fecha: -1})
-        .then(articulos => {
-            if (!articulos || articulos.length === 0) {
-                return res.status(404).json({
-                    mensaje: "No se encontraron artículos"
-                });
-            }
-            return res.status(200).json({
-                mensaje: "Listado de artículos exitoso",
-                articulos
+        if (limite) {
+            // Si se recibe el parámetro 'limite', aplicar el límite
+            articulos = await Articulo.find({})
+            .sort({ fecha: 1 })
+            .limit(2);
+        } else {
+            // Si no se recibe el parámetro 'limite', obtener todos los artículos ordenados por fecha
+            articulos = await Articulo.find({}).sort({ fecha: 1 });
+        }
+
+        if (!articulos || articulos.length === 0) {
+            return res.status(404).json({
+                mensaje: "No se encontraron artículos"
             });
-        })
-        .catch(error => {
-            return res.status(500).json({
-                mensaje: "Error al buscar artículos",
-                error: error.message
-            });
+        }
+
+        return res.status(200).json({
+            mensaje: "Listado de artículos exitoso",
+            articulos
         });
+    } catch (error) {
+        return res.status(500).json({
+            mensaje: "Error al buscar artículos",
+            error: error.message
+        });
+    }
 };
+//buscar un solo articulo
+const buscaruno=(req,res)=>{
+//recoger id de articulo por url
+
+//buscar articulo 
+
+//mensage de que no se encontro el articulo
+
+//devolver articulo
+}
 module.exports = {
     prueba,
     curso,
     crear,
-    listar
+    listar,
+    buscaruno
 }

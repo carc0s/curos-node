@@ -13,6 +13,8 @@ router.get("/curso",ArticuloDAO.curso)
 
 router.post("/crear",ArticuloDAO.crear)
 
-router.get("/listar",ArticuloDAO.listar)
+router.get("/listar/:ultimos?",ArticuloDAO.listar)
+
+router.get("/buscar/:id",ArticuloDAO.buscaruno)
 
 module.exports=router;
