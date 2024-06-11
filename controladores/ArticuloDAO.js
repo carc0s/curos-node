@@ -1,7 +1,7 @@
-const validator = require('validator');
+
 //importar modelo de articulo
 const Articulo = require('../modelos/Articulo');
-
+const { validarDatos } = require('../helper/Validadr');
 
 
 //contralador de articulo de blog con programacion funcional
@@ -33,10 +33,13 @@ const crear = async (req, res) => {
     //recoger parametros por post
     let parametros = req.body;
 
-
-    //validar datos
-    validarDatos(req, res, parametros);
-
+    // Validar datos
+    const errorValidacion = validarDatos(parametros);
+    if (errorValidacion) {
+        return res.status(400).json({
+            mensaje: errorValidacion
+        });
+    }
     //crear el objeto a guardar
     const articulo = new Articulo(parametros);
     //asignar valores a objetos basado en el modelo (manual o autamatico)
@@ -156,8 +159,12 @@ const modificar = async (req, res) => {
     let id = req.params.id;
     let parametros = req.body;
 
-    // Validar datos
-    validarDatos(req, res, parametros);
+    const errorValidacion = validarDatos(parametros);
+    if (errorValidacion) {
+        return res.status(400).json({
+            mensaje: errorValidacion
+        });
+    }
 
     // Buscar y actualizar el artículo
     try {
@@ -177,24 +184,6 @@ const modificar = async (req, res) => {
         return res.status(500).json({
             mensaje: "Error al modificar el artículo",
             error
-        });
-    }
-};
-
-// Función para validar datos del body y json
-const validarDatos = (req, res, parametros) => {
-    try {
-        let validartitulo = !validator.isEmpty(parametros.titulo) && validator.isLength(parametros.titulo, { min: 5 });
-        let validarcontenido = !validator.isEmpty(parametros.contenido);
-
-        if (!validartitulo || !validarcontenido) {
-            return res.status(400).json({
-                mensaje: "No se han validado los datos"
-            });
-        }
-    } catch (error) {
-        return res.status(400).json({
-            mensaje: error.message
         });
     }
 };
