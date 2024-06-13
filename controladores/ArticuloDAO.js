@@ -2,7 +2,9 @@
 //importar modelo de articulo
 const Articulo = require('../modelos/Articulo');
 const { validarDatos } = require('../helper/Validadr');
+const fs = require("fs");
 
+const path = require("path");
 
 //contralador de articulo de blog con programacion funcional
 const prueba = (req, res) => {
@@ -187,6 +189,129 @@ const modificar = async (req, res) => {
         });
     }
 };
+//subir imagen
+const subirimagen = async (req, res) => {
+    // Recoger el fichero de la imagen
+    if (!req.file || req.file == undefined) {
+        return res.status(400).json({
+            mensaje: "sin imagen"
+        });
+    }
+
+    // Nombre del archivo
+    let nombrearchivo = req.file.originalname;
+
+    // Extensión del archivo
+    let extencion = nombrearchivo.split("\.");
+    let archivoextencion = extencion[1].toLowerCase(); // Convertir la extensión a minúsculas para evitar problemas de validación
+
+    // Comprobar extensión del archivo
+    if (archivoextencion != "png" && archivoextencion != "jpg" && archivoextencion != "jpeg" && archivoextencion != "gif") {
+        // Borrar archivo
+        fs.unlink(req.file.path, (error) => {
+            if (error) {
+                return res.status(500).json({
+                    mensaje: "Error al eliminar el archivo no válido",
+                    error
+                });
+            }
+            return res.status(400).json({
+                mensaje: "extencion no valida"
+            });
+        });
+    } else {
+        try {
+            // Obtener el ID del artículo desde los parámetros de la solicitud
+            let id = req.params.id;
+
+            // Buscar y actualizar el artículo
+            let articulo = await Articulo.findByIdAndUpdate(id, { imagen: req.file.filename }, { new: true });
+
+            if (!articulo) {
+                // Borrar el archivo si el artículo no se encuentra
+                fs.unlink(req.file.path, (error) => {
+                    return res.status(404).json({
+                        mensaje: "No se encontró el artículo"
+                    });
+                });
+            } else {
+                return res.status(200).json({
+                    mensaje: "Imagen subida y artículo actualizado correctamente",
+                    articulo,
+                    file: req.file
+                });
+            }
+        } catch (error) {
+            // Borrar el archivo en caso de error
+            fs.unlink(req.file.path, (err) => {
+                return res.status(500).json({
+                    mensaje: "Error al modificar el artículo",
+                    error
+                });
+            });
+        }
+    }
+};
+
+// Obtener imagen
+const imagen = (req, res) => {
+    let archivo = req.params.imagen;
+    let rutaarchivo = "./imagenes/articulos/" + archivo;
+
+    fs.access(rutaarchivo, fs.constants.F_OK, (err) => {
+        if (err) {
+            return res.status(404).json({
+                mensaje: "imagen no encontrada"
+            });
+        } else {
+            return res.sendFile(path.resolve(rutaarchivo));
+        }
+    });
+};
+//buscador 
+const buscador = async (req, res) => {
+    try {
+        // Obtener la palabra a buscar
+        let palabra = req.params.palabra;
+
+        // Buscar la palabra en la base de datos
+        const articulos = await Articulo.find({
+            $or: [
+                { titulo: { $regex: palabra, $options: "i" } },
+                { contenido: { $regex: palabra, $options: "i" } }
+            ]
+        }).sort({ fecha: -1 });
+
+        if (!articulos || articulos.length === 0) {
+            return res.status(404).json({
+                mensaje: "No se encontraron artículos"
+            });
+        }
+
+        return res.status(200).json({
+            mensaje: "Búsqueda exitosa",
+            articulos
+        });
+    } catch (error) {
+        return res.status(500).json({
+            mensaje: "Error al buscar artículos",
+            error
+        });
+    }
+};
+
+
+
+
+
+
+
+
+
+
+
+
+//exportar metodos de controlador
 module.exports = {
     prueba,
     curso,
@@ -194,5 +319,8 @@ module.exports = {
     listar,
     buscaruno,
     eliminar,
-    modificar
+    modificar,
+    subirimagen,
+    imagen,
+    buscador
 }
