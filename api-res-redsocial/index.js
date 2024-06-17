@@ -16,6 +16,16 @@ app.use(express.json());//recibir datos con content-type app/json
 
 app.use(express.urlencoded({ extended: true }));//recibir datos con content-type app/x-www-form-urlencoded
 
+//cargar rutas 
+const userRoutes = require('./rutas/user');
+const publicacionRoutes = require('./rutas/publicacion');
+const seguirRoutes = require('./rutas/seguir');
+
+
+app.use('/api/usu', userRoutes);
+app.use('/api/publi', publicacionRoutes);
+app.use('/api/seguir', seguirRoutes);
+
 
 // Crear ruta para la raíz
 app.get('/', (req, res) => {
