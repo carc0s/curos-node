@@ -98,7 +98,7 @@ const login = async (req, res) => {
     }
   
     //comprobar si la contraseña es correcta
-    const passwordMatch = bcrypt.compareSync( params.password,usuarios.password);
+    const passwordMatch = bcrypt.compareSync( params.password,existeemail.password);
     if (!passwordMatch) {
       return res.status(400).json({
         status: "error",
