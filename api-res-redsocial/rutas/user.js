@@ -9,5 +9,6 @@ router.post("/registrarusu", daousuario.registrarusu);
 router.post("/login", daousuario.login);
 router.get("/user/:id",check.auth, daousuario.perfil);
 router.get("/paginacion/:page?",check.auth, daousuario.paginacion);
+router.put("/update/",check.auth, daousuario.update);
 // exportar módulo
 module.exports = router;

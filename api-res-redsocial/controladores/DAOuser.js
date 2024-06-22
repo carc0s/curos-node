@@ -178,8 +178,8 @@ const paginacion = async (req, res) => {
 
     if (!userDocs) {
       return res.status(404).json({
-      status: "error",
-      message: "Error al obtener usuarios",
+        status: "error",
+        message: "Error al obtener usuarios",
       });
     }
     // Enviar la respuesta con los datos paginados
@@ -201,13 +201,72 @@ const paginacion = async (req, res) => {
   }
 };
 
+//actulizar datos de ususarios
+const update = async (req, res) => {
+  try {
+    // Obtener el ID del usuario autenticado
+    const userId = req.user;
+
+    // Obtener los datos del formulario
+    const params = req.body;
+
+    // Verificar si el email o nick ya están en uso por otro usuario, excluyendo al usuario actual
+    let existingUsers = await usuarios.find({
+      $or: [
+        { email: { $regex: new RegExp(`^${params.email}$`, 'i') } },
+        { nick: { $regex: new RegExp(`^${params.nick}$`, 'i') } }
+      ],
+      _id: { $ne: userId } // Excluir el usuario actual
+    });
+
+    if (existingUsers.length > 0) {
+      return res.status(400).json({
+        status: "error",
+        message: "Email o nick ya registrado",
+      });
+    }
+
+    // Cifrar contraseña si se proporciona una nueva
+    if (params.password) {
+      const hashedPassword = await bcrypt.hash(params.password, 10);
+      params.password = hashedPassword;
+    }
+
+    // Actualizar los datos del usuario
+    const usuarioActualizado = await usuarios.findByIdAndUpdate(userId, params, { new: true });
+
+    if (usuarioActualizado) {
+      return res.status(200).json({
+        status: "success",
+        message: "Usuario actualizado correctamente",
+        usuario: usuarioActualizado,
+      });
+    } else {
+      return res.status(404).json({
+        status: "error",
+        message: "Usuario no encontrado",
+      });
+    }
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      status: "error",
+      message: "Error del servidor",
+      error: error.message,
+    });
+  }
+};
+
+
 // Exportar funciones
 module.exports = {
   getUsers,
   registrarusu,
   login,
   perfil,
-  paginacion
+  paginacion,
+  update,
 };
 
 

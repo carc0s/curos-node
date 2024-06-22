@@ -10,6 +10,10 @@ const usuarioShema = new Schema({
         type: String,
 
     },
+    bio:{
+        type: String,
+        default: 'Bienvenido a mi perfil'
+    },
     nick: {
         type: String,
         required: [true, 'El nick es obligatorio']
