@@ -74,6 +74,7 @@ const registrarusu = async (req, res) => {
     });
   }
 };
+
 //iniciar sesion
 const login = async (req, res) => {
   try {
@@ -121,6 +122,9 @@ const login = async (req, res) => {
     });
   }
 };
+
+//perfil de usuario
+
 const perfil = async (req, res) => {
   try {
     // Obtener usuario autenticado
