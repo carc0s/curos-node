@@ -1,19 +1,37 @@
-//acciones de prueba
-const getSeguir = (req, res) => {
-    return res.status(200).json([{
+//importar 
+const Seguir = require('../modelos/seguir');
+const userVO = require('../modelos/userVO');
+
+
+
+
+//guardar seguir
+
+
+const Seguirguardar = async (req, res) => {
+    //conseguir datos 
+    const params = req.body;
+    const sesion = req.user;
+
+    //crear objeto a guardar
+    let seguir = new Seguir({
+        id_usuario: sesion._id,
+        id_seguidor: params.seguir,
+
+    });
+
+    //guardar en la base de datos 
+    await nuevoUsuario.save();
+
+    
+    return res.status(200).json({
+        status: "success",
         seguir: "Seguir a un usuario",
-        autor: "Jhonny",
-        url: "https://www.udemy.com/course/curso-de-node-js/",
-    },
-    {
-        seguir: "Dejar de seguir a un usuario",
-        autor
-            : "Jhonny",
-        url: "https://www.udemy.com/course/curso-de-node-js/",
-    },
-    ]);
+        seguido: seguir,
+    });
+
 }
 //exportar modulo
 module.exports = {
-    getSeguir
+    Seguirguardar
 }

@@ -1,9 +1,11 @@
 // DAOuser.js
-
+const fs = require("fs");
 const usuarios = require('../modelos/userVO');
 const bcrypt = require('bcrypt');
 const jwt = require('../servicios/jwt');
 const mongoose = require('mongoose-pagination');
+const path = require("path");
+
 const getUsers = (req, res) => {
   return res.status(200).json([
     {
@@ -58,7 +60,7 @@ const registrarusu = async (req, res) => {
     let nuevoUsuario = new usuarios(params);
 
     // Guardar usuario en la base de datos
-    await nuevoUsuario.save();
+    await nuevoUsuario.save()   ;
 
     return res.status(200).json({
       status: "success",
@@ -262,6 +264,88 @@ const update = async (req, res) => {
   }
 };
 
+//subir imagen
+const subirImagen = async (req, res) => {
+  // Recoger el fichero de la imagen
+  if (!req.file || req.file == undefined) {
+    return res.status(400).json({
+      mensaje: "sin imagen"
+    });
+  }
+
+  // Nombre del archivo
+  let nombrearchivo = req.file.originalname;
+
+  // Extensión del archivo
+  let extencion = nombrearchivo.split("\.");
+  let archivoextencion = extencion[1].toLowerCase(); // Convertir la extensión a minúsculas para evitar problemas de validación
+
+  // Comprobar extensión del archivo
+  if (archivoextencion != "png" && archivoextencion != "jpg" && archivoextencion != "jpeg" && archivoextencion != "gif") {
+    // Borrar archivo
+    fs.unlink(req.file.path, (error) => {
+      if (error) {
+        return res.status(500).json({
+          mensaje: "Error al eliminar el archivo no válido",
+          error
+        });
+      }
+      return res.status(400).json({
+        mensaje: "extencion no valida"
+      });
+    });
+  } else {
+    try {
+      // Obtener el ID del artículo desde los parámetros de la solicitud
+      let id = req.params.id;
+
+      // Buscar y actualizar el artículo
+      let foto = await usuarios.findByIdAndUpdate(req.user._id, { image: req.file.filename }, { new: true });
+
+      if (!foto) {
+        // Borrar el archivo si el artículo no se encuentra
+        fs.unlink(req.file.path, (error) => {
+          return res.status(404).json({
+            mensaje: "No se encontró el artículo"
+          });
+        });
+      } else {
+        return res.status(200).json({
+          status: "success",
+          mensaje: "Imagen subida y artículo actualizado correctamente",
+  
+
+        });
+      }
+    } catch (error) {
+      // Borrar el archivo en caso de error
+      fs.unlink(req.file.path, (err) => {
+        return res.status(500).json({
+          mensaje: "Error al modificar el artículo",
+          error
+        });
+      });
+    }
+  }
+};
+
+// Obtener imagen
+const buscarImagen = (req, res) => {
+  let archivo = req.params.file;
+  console.log(archivo);
+  let rutaarchivo = "./imagenes/fotoperfil/" + archivo;
+
+  fs.access(rutaarchivo, fs.constants.F_OK, (err) => {
+    if (err) {
+      return res.status(404).json({
+        mensaje: "imagen no encontrada"
+      });
+    } else {
+      return res.sendFile(path.resolve(rutaarchivo));
+    }
+  });
+};
+
 
 // Exportar funciones
 module.exports = {
@@ -271,6 +355,8 @@ module.exports = {
   perfil,
   paginacion,
   update,
+  subirImagen,
+  buscarImagen
 };
 
 

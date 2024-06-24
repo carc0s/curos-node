@@ -12,7 +12,7 @@ const almacenamiento = multer.diskStorage({
         cb(null, "./imagenes/articulos");
     },
     filename: (req, file, cb) => {
-        cb(null, "articulo" + Date.now + file.originalname);
+        cb(null, "articulo" + Date.now() + file.originalname);
     }
 });
 const subida = multer({ storage: almacenamiento });
