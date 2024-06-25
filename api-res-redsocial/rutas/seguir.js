@@ -6,5 +6,6 @@ const check = require('../middleware/auth.js');
 //definir rutas
 router.post("/seguirusu",check.auth, seguir.Seguirguardar);
 router.delete("/dejarseguir/:id",check.auth, seguir.SeguirEliminar);
+router.get("/paginacionseguir/:id?/:page?",check.auth,  seguir.paginacionSeguidos);
 //exportar modulo
 module.exports = router;
