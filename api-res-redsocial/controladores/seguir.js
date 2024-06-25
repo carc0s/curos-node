@@ -1,6 +1,8 @@
 const Seguir = require('../modelos/seguir');
 const UserVO = require('../modelos/userVO'); 
 
+const servicioseguir = require('../servicios/seuidosId');
+
 // Guardar seguimiento
 const Seguirguardar = async (req, res) => {
     const params = req.body;
@@ -75,9 +77,11 @@ const SeguirEliminar = async (req, res) => {
 // Paginación de seguidos por un usuario específico
 const paginacionSeguidos = async (req, res) => {
     try {
+        // Obtener el id del usuario de la sesión o del parámetro de la URL
         let sesion = req.user._id;
-
         if (req.params.id) sesion = req.params.id;
+
+        // Definir el número de página y elementos por página
         const page = req.params.page ? parseInt(req.params.page, 10) : 1;
         const perPage = 5;
 
@@ -86,19 +90,20 @@ const paginacionSeguidos = async (req, res) => {
 
         // Obtener los seguimientos para la página actual
         const seguimientos = await Seguir.find({ id_usuario: sesion })
-            .populate("id_usuario id_seguidor")
-
-            .sort({ _id: -1 }) // Ordenar por el ID descendente o cualquier otro criterio adecuado
-            .skip((page - 1) * perPage)
+            .populate("id_seguidor", "-password -rol -__v") // Excluir campos innecesarios
+            .sort({ _id: -1 }) // Ordenar por ID descendente
+            .skip((page - 1) * perPage) // Saltar los documentos según la página
             .limit(perPage);
-
+       //listado
+      let idseguidos= await servicioseguir.seguirid(sesion);
         return res.status(200).json({
             status: "success",
             message: "Seguimientos obtenidos correctamente",
-            seguimientos,
-           /* totalSeguimientos: total,
+            datosS_de_siguiendo:seguimientos,
+            totalSeguimientos: total,
             totalPages: Math.ceil(total / perPage),
-            currentPage: page,*/
+            currentPage: page,
+            datos_servicio: idseguidos,
         });
     } catch (error) {
         console.error(error);
@@ -109,6 +114,7 @@ const paginacionSeguidos = async (req, res) => {
         });
     }
 };
+
 
 
 
