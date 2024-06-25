@@ -22,7 +22,7 @@ exports.auth = (req, res, next) => {
     try {
         //decodificar token
         let payload = jwt.decode(token, secreto);
-        console.log(payload);
+        
         //comprobar si el token ha expirado
         if (payload.exp <= moment().unix()) {
             return res.status(401).send({ message: "El token ha expirado" });
