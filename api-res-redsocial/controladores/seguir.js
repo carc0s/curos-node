@@ -1,5 +1,5 @@
 const Seguir = require('../modelos/seguir');
-const UserVO = require('../modelos/userVO'); 
+const UserVO = require('../modelos/userVO');
 
 const servicioseguir = require('../servicios/seuidosId');
 
@@ -75,15 +75,63 @@ const SeguirEliminar = async (req, res) => {
 };
 
 // Paginación de seguidos por un usuario específico
+// Función para obtener paginación
+const obtenerPaginacion = (req) => {
+    const page = req.params.page ? parseInt(req.params.page, 10) : 1;
+    const perPage = 5;
+    return { page, perPage };
+};
+
+// Paginación de seguidos por un usuario específico
 const paginacionSeguidos = async (req, res) => {
     try {
         // Obtener el id del usuario de la sesión o del parámetro de la URL
         let sesion = req.user._id;
         if (req.params.id) sesion = req.params.id;
 
-        // Definir el número de página y elementos por página
-        const page = req.params.page ? parseInt(req.params.page, 10) : 1;
-        const perPage = 5;
+        const { page, perPage } = obtenerPaginacion(req);
+
+        // Obtener el total de documentos de seguimientos por el usuario actual
+        const total = await Seguir.countDocuments({ id_seguidor: sesion });
+
+        // Obtener los seguimientos para la página actual
+        const seguimientos = await Seguir.find({ id_seguidor: sesion })
+            .populate("id_usuario id_seguidor", "-password -rol -__v") // Excluir campos innecesarios
+            .sort({ _id: -1 }) // Ordenar por ID descendente
+            .skip((page - 1) * perPage) // Saltar los documentos según la página
+            .limit(perPage);
+
+        // listado
+        let idseguidos = await servicioseguir.seguirid(sesion);
+
+        return res.status(200).json({
+            status: "success",
+            message: "Seguimientos obtenidos correctamente",
+            seguimientos,
+            datosS_de_siguiendo: idseguidos.seguidores,
+            datos_de_seguidos: idseguidos.seguidos,
+            totalSeguimientos: total,
+            totalPages: Math.ceil(total / perPage),
+            currentPage: page,
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            status: "error",
+            message: "Error del servidor",
+            error: error.message,
+        });
+    }
+};
+
+// Paginación de todos los seguidores
+const paginacionSeguidores = async (req, res) => {
+    try {
+        // Obtener el id del usuario de la sesión o del parámetro de la URL
+        let sesion = req.user._id;
+        if (req.params.id) sesion = req.params.id;
+        console.log("sesion",  req.params.id);
+        const { page, perPage } = obtenerPaginacion(req);
 
         // Obtener el total de documentos de seguimientos por el usuario actual
         const total = await Seguir.countDocuments({ id_usuario: sesion });
@@ -94,61 +142,16 @@ const paginacionSeguidos = async (req, res) => {
             .sort({ _id: -1 }) // Ordenar por ID descendente
             .skip((page - 1) * perPage) // Saltar los documentos según la página
             .limit(perPage);
-       //listado
-      let idseguidos= await servicioseguir.seguirid(sesion);
-        return res.status(200).json({
-            status: "success",
-            message: "Seguimientos obtenidos correctamente",
-            datosS_de_siguiendo:seguimientos,
-            totalSeguimientos: total,
-            totalPages: Math.ceil(total / perPage),
-            currentPage: page,
-            datos_servicio: idseguidos,
-        });
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({
-            status: "error",
-            message: "Error del servidor",
-            error: error.message,
-        });
-    }
-};
 
-
-
-
-
-
-
-
-
-
-// Paginación de todos los seguidores
-const paginacionSeguidores = async (req, res) => {
-    try {
-        let sesion = req.user._id;
-
-        if (req.params.id) sesion = req.params.id;
-        const page = req.params.page ? parseInt(req.params.page, 10) : 1;
-        const perPage = 5;
-
-        // Obtener el total de documentos en la colección de usuarios
-        const total = await Seguir.countDocuments();
-
-        // Obtener los usuarios para la página actual
-        const userDocs = await Seguir.find({
-            id_usuario: sesion
-        }).populate("id_usuario id_seguidor")
-            .sort('id')
-            .skip((page - 1) * perPage)
-            .limit(perPage);
-
+        // listado
+        let idseguidos = await servicioseguir.seguirid(sesion);
 
         return res.status(200).json({
             status: "success",
-            message: "Seguimientos obtenidos correctamente",
+            message: "Listado de usuarios que me siguen",
             seguimientos,
+            datosS_de_siguiendo: idseguidos.seguidores,
+            datos_de_seguidos: idseguidos.seguidos,
             totalSeguimientos: total,
             totalPages: Math.ceil(total / perPage),
             currentPage: page,
@@ -162,6 +165,7 @@ const paginacionSeguidores = async (req, res) => {
         });
     }
 };
+
 
 module.exports = {
     Seguirguardar,

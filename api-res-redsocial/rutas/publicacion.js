@@ -2,8 +2,9 @@
 const express = require('express');
 const router = express.Router();
 const daopublicacion = require('../controladores/DAOpublicacion');
+const check = require('../middleware/auth.js');
 //definir rutas
-router.get("/pruebas-publicacion", daopublicacion.getPublicacion);
+router.post("/guardarpubli",check.auth, daopublicacion.savePublicacion);
 
 //exportar modulo
 module.exports = router;

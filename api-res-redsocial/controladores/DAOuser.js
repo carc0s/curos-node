@@ -5,7 +5,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('../servicios/jwt');
 const mongoose = require('mongoose-pagination');
 const path = require("path");
-
+const servivcioseguir = require('../servicios/seuidosId');
 const getUsers = (req, res) => {
   return res.status(200).json([
     {
@@ -60,7 +60,7 @@ const registrarusu = async (req, res) => {
     let nuevoUsuario = new usuarios(params);
 
     // Guardar usuario en la base de datos
-    await nuevoUsuario.save()   ;
+    await nuevoUsuario.save();
 
     return res.status(200).json({
       status: "success",
@@ -150,11 +150,13 @@ const perfil = async (req, res) => {
         message: "Usuario no encontrado",
       });
     }
-
+    const info = await servivcioseguir.seguido(req.user._id, id);
     return res.status(200).json({
       status: "success",
       message: "Usuario logueado",
       usuario,
+      seguidos: info.seguidos,
+      seguidores: info.seguidores,
     });
   } catch (error) {
     console.error(error); // Log del error para depuración
@@ -188,14 +190,18 @@ const paginacion = async (req, res) => {
         message: "Error al obtener usuarios",
       });
     }
+    let idseguidos = await servivcioseguir.seguirid(req.user._id);
     // Enviar la respuesta con los datos paginados
     return res.status(200).json({
       status: "success",
       message: "Usuarios obtenidos correctamente",
       usuarios: userDocs,
+      datosS_de_siguiendo: idseguidos.seguidores,
+      datos_de_seguidos: idseguidos.seguidos,
       totalUsers: total,
       totalPages: Math.ceil(total / perPage),
       currentPage: page,
+     
     });
   } catch (error) {
     console.error(error);
@@ -313,7 +319,7 @@ const subirImagen = async (req, res) => {
         return res.status(200).json({
           status: "success",
           mensaje: "Imagen subida y artículo actualizado correctamente",
-  
+
 
         });
       }

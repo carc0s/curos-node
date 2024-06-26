@@ -19,7 +19,7 @@ const subida = multer({ storage: almacenamiento });
 router.get("/pruebas",check.auth, daousuario.getUsers);
 router.post("/registrarusu", daousuario.registrarusu);
 router.post("/login", daousuario.login);
-router.get("/user/:id",check.auth, daousuario.perfil);
+router.get("/perfil/:id",check.auth, daousuario.perfil);
 router.get("/paginacion/:page?",check.auth, daousuario.paginacion);
 router.put("/update/",check.auth, daousuario.update);
 router.post("/subir",[check.auth,subida.single("file0")], daousuario.subirImagen);
