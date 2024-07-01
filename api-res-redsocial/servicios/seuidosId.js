@@ -7,11 +7,11 @@ const seguir = require('../modelos/seguir');
 const seguirid = async (userID) => {
     try {
         const seguidores = await seguir.find({ id_usuario: userID })
-            .select({ "_id": 0, "__v": 0, "id_usuario": 0, "fechaSeguir": 0 })
+            .select({ "_id": 0, "__v": 0, "id_usuario": 0, "fechaSeguir": 0 ,"email":0})
             .exec();
 
         const seguidos = await seguir.find({ id_seguidor: userID })
-            .select({ "_id": 0, "__v": 0, "id_seguidor": 0, "fechaSeguir": 0 })
+            .select({ "_id": 0, "__v": 0, "id_seguidor": 0, "fechaSeguir": 0, "email":0})
             .exec();
 
         // Procesar array de seguidores

@@ -1,6 +1,6 @@
 const Seguir = require('../modelos/seguir');
 const UserVO = require('../modelos/userVO');
-
+const publicacion = require('../modelos/publicacion');
 const servicioseguir = require('../servicios/seuidosId');
 
 // Guardar seguimiento
@@ -96,7 +96,7 @@ const paginacionSeguidos = async (req, res) => {
 
         // Obtener los seguimientos para la página actual
         const seguimientos = await Seguir.find({ id_seguidor: sesion })
-            .populate("id_usuario id_seguidor", "-password -rol -__v") // Excluir campos innecesarios
+            .populate("id_usuario id_seguidor", "-password -rol -__v -email") // Excluir campos innecesarios
             .sort({ _id: -1 }) // Ordenar por ID descendente
             .skip((page - 1) * perPage) // Saltar los documentos según la página
             .limit(perPage);
@@ -138,7 +138,7 @@ const paginacionSeguidores = async (req, res) => {
 
         // Obtener los seguimientos para la página actual
         const seguimientos = await Seguir.find({ id_usuario: sesion })
-            .populate("id_seguidor", "-password -rol -__v") // Excluir campos innecesarios
+            .populate("id_seguidor", "-password -rol -__v -email") // Excluir campos innecesarios
             .sort({ _id: -1 }) // Ordenar por ID descendente
             .skip((page - 1) * perPage) // Saltar los documentos según la página
             .limit(perPage);
@@ -166,10 +166,38 @@ const paginacionSeguidores = async (req, res) => {
     }
 };
 
+const contador =async(req,res)=>{
+    let sesion = req.user._id;    
+    if(req.params.id){
+        sesion = req.params.id;
+
+    }
+    try {
+        const totalmeSeguidos = await Seguir.countDocuments({ id_seguidor: sesion });
+        const totalSigo = await Seguir.countDocuments({ id_usuario: sesion });
+        const totalPublicaciones = await  publicacion.countDocuments({ user: sesion });
+        return res.status(200).json({
+            status: "success",
+            message: "Contador de seguidores",
+            totalSeguidos: totalmeSeguidos,
+            totalSigo: totalSigo,
+            totalPublicaciones: totalPublicaciones,
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            status: "error",
+            message: "Error del servidor",
+            error: error.message,
+        });
+    }
+
+}
 
 module.exports = {
     Seguirguardar,
     SeguirEliminar,
     paginacionSeguidos,
-    paginacionSeguidores
+    paginacionSeguidores,
+    contador
 };

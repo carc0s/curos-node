@@ -23,5 +23,7 @@ router.get("/buscarpubli/:id",check.auth, daopublicacion.buscarPublicacion);
 router.delete("/eliminarpubli/:id",check.auth, daopublicacion.EliminarPublicacion);
 router.get("/listarPublicion/:id/:page?",check.auth, daopublicacion.listarPublicacionesUsuario);
 router.post("/subir/:id",[check.auth,subida.single("file0")], daopublicacion.subirImagen);
+router.get("/buscar/:file",check.auth, daopublicacion.buscarImagen);
+router.get("/listarTodasPubliciones/:page?",check.auth, daopublicacion.listarTodasPublicaciones);
 //exportar modulo
 module.exports = router;

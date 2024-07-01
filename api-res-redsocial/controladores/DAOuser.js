@@ -6,6 +6,7 @@ const jwt = require('../servicios/jwt');
 const mongoose = require('mongoose-pagination');
 const path = require("path");
 const servivcioseguir = require('../servicios/seuidosId');
+const validar = require('../controladores/helppers/validator');
 const getUsers = (req, res) => {
   return res.status(200).json([
     {
@@ -28,7 +29,7 @@ const registrarusu = async (req, res) => {
   // Recoger datos de la petición
   let params = req.body;
 
-  // Validar datos
+// Validar datos
   if (!params.nombre || !params.email || !params.password || !params.nick) {
     return res.status(400).json({
       status: "error",
@@ -36,7 +37,12 @@ const registrarusu = async (req, res) => {
     });
   }
 
+
+  // validar con  validator
   try {
+    validar.validate(params);
+    
+
     // Verificar si el usuario ya existe
     let existingUser = await usuarios.findOne({
       $or: [
@@ -179,7 +185,7 @@ const paginacion = async (req, res) => {
     const total = await usuarios.countDocuments();
 
     // Obtener los usuarios para la página actual
-    const userDocs = await usuarios.find({})
+    const userDocs = await usuarios.find({}).select('-password -rol -email -__v')
       .sort('id')
       .skip((page - 1) * perPage)
       .limit(perPage);
@@ -201,7 +207,7 @@ const paginacion = async (req, res) => {
       totalUsers: total,
       totalPages: Math.ceil(total / perPage),
       currentPage: page,
-     
+
     });
   } catch (error) {
     console.error(error);
@@ -242,7 +248,11 @@ const update = async (req, res) => {
     if (params.password) {
       const hashedPassword = await bcrypt.hash(params.password, 10);
       params.password = hashedPassword;
+    } else {
+
+      delete params.password;
     }
+
 
     // Actualizar los datos del usuario
     const usuarioActualizado = await usuarios.findByIdAndUpdate(userId, params, { new: true });

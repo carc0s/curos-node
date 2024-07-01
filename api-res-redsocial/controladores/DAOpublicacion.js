@@ -1,8 +1,10 @@
 //acciones de prueba
 const publicacion = require('../modelos/publicacion');
 const mongoose = require('mongoose-pagination');
+const fs = require("fs");
+const path = require("path");
 
-
+const servicios = require('../servicios/seuidosId');
 //guardar publicacion
 const savePublicacion = async (req, res) => {
     const params = req.body;
@@ -44,7 +46,7 @@ const buscarPublicacion = async (req, res) => {
     try {
         // Obtener usuario autenticado
         const id = req.params._id;
-        
+
         // Validar que se ha proporcionado un ID
         if (!id) {
             return res.status(400).json({
@@ -125,7 +127,7 @@ const EliminarPublicacion = async (req, res) => {
 
 const obtenerPaginacion = (req) => {
     const page = req.params.page ? parseInt(req.params.page, 10) : 1;
-    const perPage = 2;
+    const perPage = 5;
     return { page, perPage };
 };
 
@@ -138,7 +140,7 @@ const listarPublicacionesUsuario = async (req, res) => {
         const { page, perPage } = obtenerPaginacion(req);
 
         // Validar que se ha proporcionado un ID de usuario válido
-        if (!userId ) {
+        if (!userId) {
             return res.status(400).json({
                 status: "error",
                 message: "ID de usuario es requerido y debe ser válido",
@@ -146,17 +148,17 @@ const listarPublicacionesUsuario = async (req, res) => {
         }
 
         // Buscar las publicaciones del usuario en la base de datos
-        const publicaciones = await publicacion.find({ user: userId }).populate('user','-bio -password -rol -image -fecha -__v')
-            .sort( "-fecha"  ) // Ordenar por ID descendente
+        const publicaciones = await publicacion.find({ user: userId }).populate('user', '-bio -password -rol -image -fecha -__v -email')
+            .sort("-fecha") // Ordenar por ID descendente
             .skip((page - 1) * perPage) // Saltar los documentos según la página
             .limit(perPage); // Limitar la cantidad de documentos a mostrar
 
-            if(!publicaciones || publicaciones.length === 0){
-                return res.status(404).json({
-                    status: "error",
-                    message: "No se encontraron publicaciones del usuario",
-                });
-            }
+        if (!publicaciones || publicaciones.length === 0) {
+            return res.status(404).json({
+                status: "error",
+                message: "No se encontraron publicaciones del usuario",
+            });
+        }
         // Obtener el total de publicaciones
         const total = await publicacion.countDocuments({ user: userId });
 
@@ -182,87 +184,120 @@ const listarPublicacionesUsuario = async (req, res) => {
 //subir imagen
 const subirImagen = async (req, res) => {
     // Recoger el fichero de la imagen
-    if (!req.file || req.file == undefined) {
-      return res.status(400).json({
-        mensaje: "sin imagen"
-      });
+    if (!req.file) {
+        return res.status(400).json({
+            mensaje: "sin imagen"
+        });
     }
-  
+
     // Nombre del archivo
     let nombrearchivo = req.file.originalname;
     const idpublicacion = req.params.id;
+
     // Extensión del archivo
-    let extencion = nombrearchivo.split("\.");
-    let archivoextencion = extencion[1].toLowerCase(); // Convertir la extensión a minúsculas para evitar problemas de validación
-  
+    let extencion = nombrearchivo.split('.').pop().toLowerCase();
+
     // Comprobar extensión del archivo
-    if (archivoextencion != "png" && archivoextencion != "jpg" && archivoextencion != "jpeg" && archivoextencion != "gif") {
-      // Borrar archivo
-      fs.unlink(req.file.path, (error) => {
-        if (error) {
-          return res.status(500).json({
-            mensaje: "Error al eliminar el archivo no válido",
-            error
-          });
-        }
-        return res.status(400).json({
-          mensaje: "extencion no valida"
-        });
-      });
-    } else {
-      try {
-        // Obtener el ID del artículo desde los parámetros de la solicitud
-        let id = req.params.id;
-  
-        // Buscar y actualizar el artículo
-        let foto = await publicacion.findByIdAndUpdate({user:req.user._id, _id:idpublicacion }, { archivo: req.file.filename }, { new: true });
-  
-        if (!foto) {
-          // Borrar el archivo si el artículo no se encuentra
-          fs.unlink(req.file.path, (error) => {
-            return res.status(404).json({
-              mensaje: "No se encontró el artículo"
+    if (!["png", "jpg", "jpeg", "gif"].includes(extencion)) {
+        try {
+            await fs.unlink(req.file.path);
+            return res.status(400).json({
+                mensaje: "extencion no valida"
             });
-          });
-        } else {
-          return res.status(200).json({
-            status: "success",
-            mensaje: "Imagen subida y artículo actualizado correctamente",
-  
-  
-          });
+        } catch (error) {
+            return res.status(500).json({
+                mensaje: "Error al eliminar el archivo no válido",
+                error
+            });
         }
-      } catch (error) {
-        // Borrar el archivo en caso de error
-        fs.unlink(req.file.path, (err) => {
-          return res.status(500).json({
-            mensaje: "Error al modificar el artículo",
-            error
-          });
-        });
-      }
+    } else {
+        try {
+            // Buscar y actualizar el artículo
+            let foto = await publicacion.findByIdAndUpdate(
+                { user: req.user._id, _id: idpublicacion },
+                { archivo: req.file.filename },
+                { new: true }
+            );
+
+            if (!foto) {
+                await fs.unlink(req.file.path);
+                return res.status(404).json({
+                    mensaje: "No se encontró el artículo"
+                });
+            } else {
+                return res.status(200).json({
+                    status: "success",
+                    mensaje: "Imagen subida y artículo actualizado correctamente",
+                });
+            }
+        } catch (error) {
+            try {
+                await fs.unlink(req.file.path);
+            } catch (err) {
+                console.error("Error al eliminar el archivo después de un error:", err);
+            }
+            return res.status(500).json({
+                mensaje: "Error al modificar el artículo",
+                error
+            });
+        }
     }
-  };
+};
+// Obtener imagen
+const buscarImagen = (req, res) => {
+    let archivo = req.params.file;
+    console.log(archivo);
+    let rutaarchivo = "./imagenes/fotoperfil/publicaciones/" + archivo;
 
-//listar las publicaciones de los usuarios que sigo
-const listarPublicacionesSeguidos = async (req, res) => {
+    fs.access(rutaarchivo, fs.constants.F_OK, (err) => {
+        if (err) {
+            return res.status(404).json({
+                mensaje: "imagen no encontrada"
+            });
+        } else {
+            return res.sendFile(path.resolve(rutaarchivo));
+        }
+    });
+};
+
+
+
+
+//listar todas las publicaciones
+const listarTodasPublicaciones = async (req, res) => {
     try {
-        // Obtener el ID del usuario autenticado
-        const userId = req.user._id;
+        const { page, perPage } = obtenerPaginacion(req);
 
-        // Buscar los usuarios seguidos por el usuario autenticado
-        const usuariosSeguidos = await Seguidor.find({ seguidor: userId }).select('usuarioSeguido');
 
-        // Obtener los IDs de los usuarios seguidos
-        const usuariosSeguidosIds = usuariosSeguidos.map(usuario => usuario.usuarioSeguido);
+        const seguidores = await servicios.seguirid(req.user._id);
+        // Buscar todas las publicaciones en la base de datos
 
-        // Buscar las publicaciones de los usuarios seguidos
-        const publicaciones = await publicacion.find({ user: { $in: usuariosSeguidosIds } });
+        const publicaciones = await publicacion.find({user:{"$in":seguidores.seguidos}}).populate('user', '-bio -password -rol -image -fecha -__v -email')
+            .sort("-fecha") // Ordenar por fecha descendente
+            .skip((page - 1) * perPage) // Saltar los documentos según la página
+            .limit(perPage); // Limitar la cantidad de documentos a mostrar
+            
+
+        if (!publicaciones || publicaciones.length === 0) {
+            return res.status(404).json({
+                status: "error",
+                message: "No se encontraron publicaciones",
+            });
+        }
+
+        // Obtener el total de publicaciones
+        const total = await publicacion.countDocuments({ user: { $nin: req.user.following } })
+       
 
         return res.status(200).json({
             status: "success",
-            message: "Publicaciones de usuarios seguidos encontradas",
+            message: "Publicaciones encontradas",
+            SEGUIDORES: seguidores.seguidos,
             publicaciones,
+           
+            totalPublicaciones: total,
+            totalPages: Math.ceil(total / perPage),
+            currentPage: page,
         });
     } catch (error) {
         console.error(error); // Log del error para depuración
@@ -274,18 +309,15 @@ const listarPublicacionesSeguidos = async (req, res) => {
     }
 };
 
-
-
-
-//subir imagenes 
-
-
-//buscar imagenes 
-//exportar modulo   
-module.exports = {
-    savePublicacion,
-    buscarPublicacion,
-    EliminarPublicacion,
-    listarPublicacionesUsuario,
-    subirImagen
-}
+//listar todas las publicaciones
+listarTodasPublicaciones,
+    //exportar modulo   
+    module.exports = {
+        savePublicacion,
+        buscarPublicacion,
+        EliminarPublicacion,
+        listarPublicacionesUsuario,
+        subirImagen,
+        buscarImagen,
+        listarTodasPublicaciones
+    }
