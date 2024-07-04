@@ -27,5 +27,5 @@ router.get("/artista/:id",check.auth, contro.buscarartista);
 router.get("/listaArtista/1",check.auth, contro.paginacionArtista);
 router.put("/updateArtista/:id",check.auth, contro.update);
 router.delete("/eliminarArtista/:id",check.auth, contro.eliminarArtista);
-
+router.post("/subir/:id",[check.auth,subida.single("file0")], contro.subirImagen);
 module.exports = router;

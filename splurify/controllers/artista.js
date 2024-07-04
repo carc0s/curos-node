@@ -3,7 +3,8 @@ const bcrypt = require('bcrypt');
 const mongoose = require('mongoose-pagination');
 const path = require("path");
 const artista = require('../modelos/artista');
-
+const album = require('../modelos/album');
+const musica = require('../modelos/musicas');
 
 
 
@@ -193,26 +194,41 @@ const update = async (req, res) => {
 const eliminarArtista = async (req, res) => {
   const publiId = req.params.id;
 
-
   try {
+  
+
+
+
     
+      // Elimina el artista
+      const result = await artista.findByIdAndDelete(publiId)
 
-    const result = await artista.findOneAndDelete({
-      _id: publiId,
-    });
+      // Encuentra los IDs de los álbumes a eliminar
+      const albumsToDelete = await album.find({ idArtista: publiId }).select('_id')
+      const albumIds = albumsToDelete.map(a => a._id);
 
-    if (!result) {
-      return res.status(404).json({
-        status: "error",
-        message: "No se encontró la publicacion.",
+      // Elimina los álbumes
+      const eliAlbum = await album.deleteMany({ idArtista: publiId })
+
+      // Elimina la música asociada a esos álbumes
+      const eliMusica = await musica.deleteMany({ idAlbum: { $in: albumIds } })
+
+      if (!eliAlbum || !eliMusica) {
+        
+        return res.status(404).json({
+          status: "error",
+          message: "No se encontró album y canciones.",
+        });
+      }
+
+   
+
+      return res.status(200).json({
+        status: "success",
+        message: "Publicación eliminada con éxito",
+        idEliminado: publiId,
       });
-    }
 
-    return res.status(200).json({
-      status: "success",
-      message: "Publicacion eliminada con éxito",
-      idEliminado: publiId
-    });
   } catch (error) {
     console.error(error);
     return res.status(500).json({
@@ -224,6 +240,87 @@ const eliminarArtista = async (req, res) => {
 };
 
 
+//subir imagen
+const subirImagen = async (req, res) => {
+  // Recoger el fichero de la imagen
+  if (!req.file || req.file == undefined) {
+    return res.status(400).json({
+      mensaje: "sin imagen"
+    });
+  }
+
+  // Nombre del archivo
+  let nombrearchivo = req.file.originalname;
+
+  // Extensión del archivo
+  let extencion = nombrearchivo.split("\.");
+  let archivoextencion = extencion[1].toLowerCase(); // Convertir la extensión a minúsculas para evitar problemas de validación
+
+  // Comprobar extensión del archivo
+  if (archivoextencion != "png" && archivoextencion != "jpg" && archivoextencion != "jpeg" && archivoextencion != "gif") {
+    // Borrar archivo
+    fs.unlink(req.file.path, (error) => {
+      if (error) {
+        return res.status(500).json({
+          mensaje: "Error al eliminar el archivo no válido",
+          error
+        });
+      }
+      return res.status(400).json({
+        mensaje: "extencion no valida"
+      });
+    });
+  } else {
+    try {
+      // Obtener el ID del artículo desde los parámetros de la solicitud
+      let id = req.params.id;
+
+      // Buscar y actualizar el artículo
+      let foto = await artista.findByIdAndUpdate(id, { image: req.file.filename }, { new: true });
+
+      if (!foto) {
+        // Borrar el archivo si el artículo no se encuentra
+        fs.unlink(req.file.path, (error) => {
+          return res.status(404).json({
+            mensaje: "No se encontró el artículo"
+          });
+        });
+      } else {
+        return res.status(200).json({
+          status: "success",
+          mensaje: "Imagen subida y artículo actualizado correctamente",
+
+
+        });
+      }
+    } catch (error) {
+      // Borrar el archivo en caso de error
+      fs.unlink(req.file.path, (err) => {
+        return res.status(500).json({
+          mensaje: "Error al modificar el artículo",
+          error
+        });
+      });
+    }
+  }
+};
+
+// Obtener imagen
+const buscarImagen = (req, res) => {
+  let archivo = req.params.file;
+  console.log(archivo);
+  let rutaarchivo = "./imagenes/artistas/" + archivo;
+
+  fs.access(rutaarchivo, fs.constants.F_OK, (err) => {
+    if (err) {
+      return res.status(404).json({
+        mensaje: "imagen no encontrada"
+      });
+    } else {
+      return res.sendFile(path.resolve(rutaarchivo));
+    }
+  });
+};
 
 //exportar funciones
 module.exports = {
@@ -232,5 +329,7 @@ module.exports = {
   buscarartista,
   paginacionArtista,
   update,
-  eliminarArtista
+  eliminarArtista,
+  subirImagen,
+  buscarImagen
 };
